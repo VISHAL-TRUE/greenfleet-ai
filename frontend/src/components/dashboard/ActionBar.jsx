@@ -7,6 +7,7 @@ export default function ActionBar({
   isOptimized = false,
   loading = false,
   activeAction = null,
+  carbonBudget = null,
   onReset,
   onSimulatePeak,
   onSimulateTraffic,
@@ -70,8 +71,31 @@ export default function ActionBar({
               Quantum Optimized
             </span>
           )}
+
+          {carbonBudget && (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium border ${
+                carbonBudget.status === 'HEALTHY'
+                  ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                  : carbonBudget.status === 'WARNING'
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+                  : carbonBudget.status === 'CRITICAL'
+                  ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                  : 'bg-rose-500/15 border-rose-500/40 text-rose-300 animate-pulse'
+              }`}
+              title={`Consumed: ${carbonBudget.consumed_kg}kg, Projected: ${carbonBudget.projected_kg}kg, Headroom: ${carbonBudget.budget_headroom_kg}kg, Dynamic Penalty: ${carbonBudget.dynamic_co2_penalty}x`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${
+                carbonBudget.status === 'HEALTHY' ? 'bg-emerald-400' :
+                carbonBudget.status === 'WARNING' ? 'bg-amber-400' :
+                carbonBudget.status === 'CRITICAL' ? 'bg-orange-400' : 'bg-rose-400'
+              }`}></span>
+              Carbon: {carbonBudget.status} ({carbonBudget.budget_utilisation_pct.toFixed(0)}% • w_co2={carbonBudget.dynamic_co2_penalty}x)
+            </span>
+          )}
         </div>
       </div>
+
 
       {/* Right: Action Buttons */}
       <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">

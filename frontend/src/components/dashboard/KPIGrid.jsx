@@ -1,10 +1,11 @@
 import React from 'react'
-import { Truck, Fuel, CloudFog, Activity, TrendingDown } from 'lucide-react'
+import { Truck, Fuel, CloudFog, ShieldAlert, TrendingDown, Leaf } from 'lucide-react'
 import MetricCard from '../common/MetricCard.jsx'
 
 export default function KPIGrid({
   benchmark = null,
   simulationState = null,
+  carbonBudget = null,
   isOptimized = false,
 }) {
   const totalVehicles = simulationState?.vehicles?.length || 0
@@ -17,6 +18,7 @@ export default function KPIGrid({
 
   const baselineData = benchmark?.baseline
   const greenflowData = benchmark?.greenflow
+  const cb = carbonBudget || simulationState?.carbon_budget
 
   const kpiData = [
     {
@@ -61,20 +63,19 @@ export default function KPIGrid({
       accent: 'emerald',
     },
     {
-      id: 'fleet-utilisation',
-      label: 'Fleet Utilisation',
-      value: isOptimized && greenflowData
-        ? `${greenflowData.fleet_utilisation_pct.toFixed(0)}%`
-        : baselineData
-        ? `${baselineData.fleet_utilisation_pct.toFixed(0)}%`
+      id: 'carbon-budget',
+      label: 'Carbon Budget',
+      value: cb
+        ? `${cb.remaining_budget_kg.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : '--',
-      icon: Activity,
-      trend: isOptimized && benchmark && (greenflowData.fleet_utilisation_pct - baselineData.fleet_utilisation_pct) > 0
-        ? `+${(greenflowData.fleet_utilisation_pct - baselineData.fleet_utilisation_pct).toFixed(0)}%`
-        : null,
-      trendPositive: true,
-      subtitle: `${assignedCount} of ${totalRoutes} routes dispatched`,
-      accent: 'blue',
+      unit: 'kg rem',
+      icon: Leaf,
+      trend: cb ? `w_co2=${cb.dynamic_co2_penalty}x` : null,
+      trendPositive: cb ? cb.status === 'HEALTHY' || cb.status === 'WARNING' : true,
+      subtitle: cb
+        ? `${cb.status} (${cb.budget_utilisation_pct.toFixed(0)}% of ${(cb.budget_kg/1000).toFixed(1)}t)`
+        : 'Budget tracking inactive',
+      accent: cb?.status === 'OVER_BUDGET' ? 'rose' : cb?.status === 'CRITICAL' ? 'amber' : 'emerald',
     },
     {
       id: 'fuel-saved',
@@ -113,3 +114,4 @@ export default function KPIGrid({
     </div>
   )
 }
+

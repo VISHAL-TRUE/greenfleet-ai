@@ -165,6 +165,7 @@ export default function Dashboard() {
       <KPIGrid
         benchmark={benchmark}
         simulationState={simulationState}
+        carbonBudget={simulationState?.carbon_budget}
         isOptimized={isOptimized}
       />
 
@@ -175,11 +176,13 @@ export default function Dashboard() {
         isOptimized={isOptimized}
         loading={loading}
         activeAction={activeAction}
+        carbonBudget={simulationState?.carbon_budget}
         onReset={handleReset}
         onSimulatePeak={handleSimulatePeak}
         onSimulateTraffic={handleSimulateTraffic}
         onOptimize={handleOptimize}
       />
+
 
       {/* 3. Main Network Map & Fleet Status Section */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">

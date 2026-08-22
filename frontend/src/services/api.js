@@ -91,6 +91,23 @@ export async function getBenchmark() {
   return request('/api/benchmark')
 }
 
+/**
+ * Fetch active Carbon Budget Governor state.
+ */
+export async function getCarbonBudget() {
+  return request('/api/simulate/carbon-budget')
+}
+
+/**
+ * Reconfigure planning horizon carbon budget quota.
+ */
+export async function setCarbonBudget(budgetKg) {
+  return request('/api/simulate/carbon-budget', {
+    method: 'POST',
+    body: JSON.stringify({ budget_kg: budgetKg }),
+  })
+}
+
 // --------------------------------------------------------------------------
 // 2. Fleet, Routes & Scoring Endpoints
 // --------------------------------------------------------------------------
@@ -155,9 +172,12 @@ export default {
   simulateTraffic,
   runOptimization,
   getBenchmark,
+  getCarbonBudget,
+  setCarbonBudget,
   getFleet,
   getRoutes,
   getScoring,
   getPrediction,
   optimize,
 }
+

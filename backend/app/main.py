@@ -75,6 +75,12 @@ def health():
     return {"status": "healthy", "service": "greenfleet-ai"}
 
 
+@app.get("/api/carbon-budget", summary="Get active Carbon Budget Governor telemetry")
+def get_carbon_budget_direct():
+    from simulation.engine import simulation_engine
+    return simulation_engine.carbon_governor.get_state()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.app.main:app", host="0.0.0.0", port=8000, reload=True)

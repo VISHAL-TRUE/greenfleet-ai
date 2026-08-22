@@ -9,6 +9,7 @@ import logging
 from threading import Lock
 from typing import Dict, List, Optional
 
+from backend.app.core.carbon_governor import CarbonBudgetGovernor
 from backend.app.core.config import settings
 from backend.app.core.integration import predict_fuel_and_co2, run_greenflow_optimizer
 from backend.app.models.assignment import (
@@ -20,6 +21,7 @@ from backend.app.models.route import RouteModel
 from backend.app.models.simulation import (
     BenchmarkComparison,
     BenchmarkKPIs,
+    CarbonBudgetModel,
     ScenarioType,
     SimulationStateResponse,
 )
@@ -36,11 +38,13 @@ class SimulationEngine:
     Guarantees thread-safe deterministic state transitions.
     """
 
-    def __init__(self):
+    def __init__(self, initial_budget_kg: float = 5000.0):
         self._lock = Lock()
         self.scenario: ScenarioType = ScenarioType.NORMAL
         self.status: str = "initialized"
         self.last_updated: str = datetime.utcnow().isoformat()
+        
+        self.carbon_governor = CarbonBudgetGovernor(budget_kg=initial_budget_kg)
         
         self.vehicles: List[VehicleModel] = []
         self.routes: List[RouteModel] = []
@@ -53,7 +57,7 @@ class SimulationEngine:
         # Initialize default state
         self.reset()
 
-    def reset(self) -> SimulationStateResponse:
+    def reset(self, budget_kg: Optional[float] = None) -> SimulationStateResponse:
         """Restores the simulation to the deterministic Normal Fleet initial state."""
         with self._lock:
             self.scenario = ScenarioType.NORMAL
@@ -65,6 +69,15 @@ class SimulationEngine:
                 self.vehicles, self.routes, self.predictions
             )
             
+            # Reset carbon governor
+            self.carbon_governor.reset(budget_kg=budget_kg)
+            base_kpi = self._calculate_kpis(self.baseline_assignments, "Baseline Heuristic")
+            self.carbon_governor.update_from_simulation(
+                consumed_co2_kg=0.0,
+                projected_co2_kg=base_kpi.estimated_co2_kg,
+                baseline_co2_kg=base_kpi.estimated_co2_kg,
+            )
+            
             # GreenFlow assignments and benchmark ready for trigger
             self.greenflow_assignments = []
             self.benchmark = None
@@ -74,7 +87,7 @@ class SimulationEngine:
             
             return self._build_state_response()
 
-    def apply_scenario(self, scenario_type: ScenarioType) -> SimulationStateResponse:
+    def apply_scenario(self, scenario_type: ScenarioType, budget_kg: Optional[float] = None) -> SimulationStateResponse:
         """Applies a stress scenario (e.g. Peak Demand or High Traffic)."""
         with self._lock:
             self.scenario = scenario_type
@@ -86,6 +99,16 @@ class SimulationEngine:
                 self.vehicles, self.routes, self.predictions
             )
             
+            base_kpi = self._calculate_kpis(self.baseline_assignments, "Baseline Heuristic")
+            if budget_kg is not None:
+                self.carbon_governor.set_budget(budget_kg)
+            
+            self.carbon_governor.update_from_simulation(
+                consumed_co2_kg=0.0,
+                projected_co2_kg=base_kpi.estimated_co2_kg,
+                baseline_co2_kg=base_kpi.estimated_co2_kg,
+            )
+            
             # Reset previous optimization until user/client runs optimizer
             self.greenflow_assignments = []
             self.benchmark = None
@@ -95,6 +118,22 @@ class SimulationEngine:
             
             return self._build_state_response()
 
+    def set_carbon_budget(self, budget_kg: float) -> SimulationStateResponse:
+        """Dynamically reconfigures the operational carbon budget and recalculates state."""
+        with self._lock:
+            self.carbon_governor.set_budget(budget_kg)
+            # Recompute state with current active assignments
+            active_assignments = self.greenflow_assignments if self.greenflow_assignments else self.baseline_assignments
+            kpi = self._calculate_kpis(active_assignments, "Active Strategy")
+            base_kpi = self._calculate_kpis(self.baseline_assignments, "Baseline Heuristic")
+            self.carbon_governor.update_from_simulation(
+                consumed_co2_kg=0.0,
+                projected_co2_kg=kpi.estimated_co2_kg,
+                baseline_co2_kg=base_kpi.estimated_co2_kg,
+            )
+            self.last_updated = datetime.utcnow().isoformat()
+            return self._build_state_response()
+
     def run_optimization(
         self,
         config: Optional[OptimizationConfigModel] = None,
@@ -102,23 +141,37 @@ class SimulationEngine:
     ) -> SimulationStateResponse:
         """
         Runs GreenFlow Quantum-Inspired Optimization on the current simulation state,
-        then evaluates and caches the dynamic benchmark comparison.
+        feeding the dynamic carbon penalty weight into the optimizer,
+        then evaluates and caches the dynamic benchmark comparison and updated carbon budget.
         """
         with self._lock:
-            # 1. Run optimization engine
+            # 1. Fetch dynamic carbon penalty from governor if not explicitly overridden
+            gov_state = self.carbon_governor.get_state()
+            opt_config = config or OptimizationConfigModel()
+            if config is None or config.co2_weight == 1.0:
+                opt_config.co2_weight = gov_state.dynamic_co2_penalty
+                
+            # 2. Run optimization engine with dynamic carbon penalty
             opt_result = run_greenflow_optimizer(
                 vehicles=self.vehicles,
                 routes=self.routes,
                 predictions=self.predictions,
-                config=config,
+                config=opt_config,
                 method=method,
             )
             
             self.greenflow_assignments = opt_result["assignments"]
             
-            # 2. Calculate dynamic KPI comparisons
+            # 3. Calculate dynamic KPI comparisons
             baseline_kpi = self._calculate_kpis(self.baseline_assignments, "Baseline Heuristic")
             greenflow_kpi = self._calculate_kpis(self.greenflow_assignments, "GreenFlow Quantum-Inspired")
+            
+            # 4. Update Carbon Budget Governor with post-optimization projected emissions
+            self.carbon_governor.update_from_simulation(
+                consumed_co2_kg=0.0,
+                projected_co2_kg=greenflow_kpi.estimated_co2_kg,
+                baseline_co2_kg=baseline_kpi.estimated_co2_kg,
+            )
             
             fuel_saved = round(max(0.0, baseline_kpi.total_fuel_l - greenflow_kpi.total_fuel_l), 1)
             fuel_pct = round(
@@ -167,14 +220,25 @@ class SimulationEngine:
             # If optimization hasn't been run yet, run it automatically to return valid benchmark
             baseline_kpi = self._calculate_kpis(self.baseline_assignments, "Baseline Heuristic")
             
-            # Run fast optimization for benchmark
+            # Run fast optimization for benchmark with dynamic carbon penalty
+            gov_state = self.carbon_governor.get_state()
+            config = OptimizationConfigModel(co2_weight=gov_state.dynamic_co2_penalty)
+            
             opt_result = run_greenflow_optimizer(
                 vehicles=self.vehicles,
                 routes=self.routes,
                 predictions=self.predictions,
+                config=config,
             )
             self.greenflow_assignments = opt_result["assignments"]
             greenflow_kpi = self._calculate_kpis(self.greenflow_assignments, "GreenFlow Quantum-Inspired")
+            
+            # Update carbon governor
+            self.carbon_governor.update_from_simulation(
+                consumed_co2_kg=0.0,
+                projected_co2_kg=greenflow_kpi.estimated_co2_kg,
+                baseline_co2_kg=baseline_kpi.estimated_co2_kg,
+            )
             
             fuel_saved = round(max(0.0, baseline_kpi.total_fuel_l - greenflow_kpi.total_fuel_l), 1)
             fuel_pct = round((fuel_saved / max(baseline_kpi.total_fuel_l, 0.001)) * 100.0, 1)
@@ -260,6 +324,8 @@ class SimulationEngine:
         )
 
     def _build_state_response(self) -> SimulationStateResponse:
+        gov_state = self.carbon_governor.get_state()
+        carbon_model = CarbonBudgetModel(**gov_state.model_dump())
         return SimulationStateResponse(
             scenario=self.scenario,
             status=self.status,
@@ -271,7 +337,9 @@ class SimulationEngine:
             baseline_assignments=self.baseline_assignments,
             greenflow_assignments=self.greenflow_assignments,
             benchmark=self.benchmark,
+            carbon_budget=carbon_model,
         )
+
 
 
 # Global singleton instance
