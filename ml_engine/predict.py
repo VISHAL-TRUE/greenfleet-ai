@@ -1,6 +1,8 @@
 """
-GreenFleet AI - ML Inference & Decision Support Interface
-Provides lightweight, standalone inference functions strictly adhering to GreenFleet JSON contracts.
+GreenFlow AI - ML Inference & Decision Support Interface
+Provides lightweight, standalone inference functions strictly adhering to GreenFlow JSON contracts:
+1. Trip-Level Route Optimization & Allocation (Backward Compatible)
+2. Real-Time Vehicle Telemetry Fuel Consumption, Behavior Detection & Alerting
 """
 
 import os
@@ -14,18 +16,16 @@ import pandas as pd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from features import FleetFeatureEngineer
+from config import EMISSION_FACTORS_KG_CO2_PER_UNIT, FUEL_PRICES_INR_PER_UNIT
+from inference.fuel_predictor import predict_fuel_consumption, load_telemetry_model, get_telemetry_model
+from inference.fuel_waste_estimator import estimate_fuel_waste, calculate_fuel_deviation_pct
+from inference.refuel_predictor import estimate_remaining_range
+from alerts.alert_engine import process_telemetry, AlertEngine
 
-# Standard Greenhouse Gas (GHG) Emission Factors (kg CO2 per litre of fuel)
-# References: DEFRA / UK Gov GHG Conversion Factors, US EPA Fleet Standards
-EMISSION_FACTORS_KG_CO2_PER_LITRE = {
-    "Diesel": 2.68,   # Standard diesel fuel
-    "Petrol": 2.31,   # Standard gasoline
-    "Hybrid": 2.31,   # Hybrid powertrain gasoline equivalent
-    "CNG": 1.95,      # Compressed natural gas (equivalent factor)
-    "Default": 2.65,  # Fleet blended average
-}
+# Standard Greenhouse Gas (GHG) Emission Factors alias
+EMISSION_FACTORS_KG_CO2_PER_LITRE = EMISSION_FACTORS_KG_CO2_PER_UNIT
 
-# Global in-memory cache for loaded model
+# Global in-memory cache for loaded trip model
 _LOADED_MODEL = None
 _DEFAULT_MODEL_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "models", "fuel_model.pkl"
@@ -60,28 +60,6 @@ def get_model(model_path: Optional[str] = None):
 def estimate_co2(fuel_litres: float, fuel_type: str = "Diesel") -> float:
     """
     Estimates carbon dioxide emissions (kg CO2) resulting from fuel combustion.
-
-    Formula:
-    --------
-    CO2 (kg) = Fuel Consumed (Litres) * Emission Factor (kg CO2 / Litre)
-
-    Emission Factors:
-    - Diesel: 2.68 kg CO2 / L
-    - Petrol: 2.31 kg CO2 / L
-    - Hybrid: 2.31 kg CO2 / L
-    - CNG:    1.95 kg CO2 / L
-    - Default: 2.65 kg CO2 / L
-
-    Parameters:
-    -----------
-    fuel_litres : float
-        Fuel consumed in litres.
-    fuel_type : str, default="Diesel"
-        Fuel / engine type of the vehicle.
-
-    Returns:
-    --------
-    float: Estimated CO2 emissions in kilograms (rounded to 1 or 2 decimal places).
     """
     factor = EMISSION_FACTORS_KG_CO2_PER_LITRE.get(
         fuel_type, EMISSION_FACTORS_KG_CO2_PER_LITRE["Default"]
@@ -92,32 +70,25 @@ def estimate_co2(fuel_litres: float, fuel_type: str = "Diesel") -> float:
 
 def _prepare_inference_row(vehicle: Dict[str, Any], route: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Constructs a feature row from Vehicle and Route JSON contracts:
-    - Vehicle contract: { vehicle_id, vehicle_type, fuel_type, vehicle_age, fuel_capacity_l, max_payload_kg, available }
-    - Route contract: { route_id, origin, destination, distance_km, required_payload_kg, traffic_factor, priority }
+    Constructs a feature row from Vehicle and Route JSON contracts.
     """
-    # Support both fuel_type and legacy engine_type
     fuel_type = vehicle.get("fuel_type") or vehicle.get("engine_type", "Diesel")
-    
-    # Support both required_payload_kg and legacy load_kg
     required_payload = route.get("required_payload_kg")
     if required_payload is None:
         required_payload = vehicle.get("load_kg", 500.0)
-    
+
     max_payload = vehicle.get("max_payload_kg")
     if max_payload is None:
         type_defaults = {"Van": 1500.0, "Light Commercial": 3500.0, "Truck": 8000.0, "Semi-Trailer": 26000.0, "Bus": 6000.0}
         max_payload = type_defaults.get(vehicle.get("vehicle_type", "Truck"), 5000.0)
 
-    # Route travel characteristics
     distance_km = float(route.get("distance_km", 50.0))
     traffic_factor = float(route.get("traffic_factor", 1.0))
-    
-    # Optional physics features with sensible operational defaults if omitted by route generator
+
     avg_speed = route.get("average_speed_kmph")
     if avg_speed is None:
         avg_speed = 70.0 / traffic_factor if distance_km > 60 else 45.0 / traffic_factor
-    
+
     road_grade = float(route.get("road_grade", 0.0))
     weather_factor = float(route.get("weather_factor", 1.0))
 
@@ -149,19 +120,6 @@ def predict_fuel(
 ) -> float:
     """
     Predicts the fuel consumption in litres for a vehicle assigned to a route.
-
-    Parameters:
-    -----------
-    vehicle_data : dict
-        Vehicle contract JSON
-    route_data : dict
-        Route contract JSON
-    model : Pipeline, optional
-        Pre-loaded model pipeline.
-
-    Returns:
-    --------
-    float: Predicted fuel consumption in litres (rounded to 1 decimal place).
     """
     mdl = model or get_model()
     row = _prepare_inference_row(vehicle_data, route_data)
@@ -176,7 +134,7 @@ def predict_trip(
     model: Any = None,
 ) -> Dict[str, Any]:
     """
-    Generates Prediction JSON contract:
+    Generates standard Prediction JSON contract:
     {
       "vehicle_id": "V001",
       "route_id": "R001",
@@ -203,13 +161,7 @@ def create_assignment(
     status: str = "assigned",
 ) -> Dict[str, Any]:
     """
-    Generates Assignment JSON contract:
-    {
-      "vehicle_id": "V001",
-      "route_id": "R001",
-      "predicted_fuel_l": 18.4,
-      "status": "assigned"
-    }
+    Generates standard Assignment JSON contract.
     """
     return {
         "vehicle_id": str(vehicle_id),
@@ -226,18 +178,6 @@ def build_fuel_cost_matrix(
 ) -> Dict[str, Dict[str, float]]:
     """
     Constructs the vehicle-route fuel consumption cost matrix for Person 3 (Quantum Optimizer).
-    Uses high-performance vectorized batch inference.
-
-    Returns:
-    --------
-    dict:
-        {
-            "V001": {
-                "R001": 18.4,
-                "R002": 24.2
-            },
-            ...
-        }
     """
     mdl = model or get_model()
 
@@ -298,7 +238,7 @@ def build_trip_cost_matrix(
 if __name__ == "__main__":
     import json
 
-    # Direct test with user JSON contracts
+    print("[GreenFlow ML] Testing unified inference interface...")
     sample_vehicle = {
         "vehicle_id": "V001",
         "vehicle_type": "Truck",
@@ -319,16 +259,22 @@ if __name__ == "__main__":
         "priority": 2,
     }
 
-    print("[GreenFleet ML] Contract Testing...")
     pred_contract = predict_trip(sample_vehicle, sample_route)
-    print("\n--- Prediction Contract ---")
-    print(json.dumps(pred_contract, indent=2))
+    print("Prediction Contract:", json.dumps(pred_contract, indent=2))
 
-    assign_contract = create_assignment(
-        pred_contract["vehicle_id"],
-        pred_contract["route_id"],
-        pred_contract["predicted_fuel_l"],
-        status="assigned",
-    )
-    print("\n--- Assignment Contract ---")
-    print(json.dumps(assign_contract, indent=2))
+    sample_telemetry = {
+        "vehicle_id": "V001",
+        "speed_kmph": 62.0,
+        "acceleration_mps2": 2.9,
+        "rpm": 2800,
+        "gear": 4,
+        "engine_load_pct": 85.0,
+        "road_slope_pct": 1.5,
+        "vehicle_type": "Truck",
+        "fuel_type": "Diesel",
+        "fuel_rate_lph": 24.5,
+        "fuel_level_l": 65.0,
+    }
+
+    alert_out = process_telemetry([sample_telemetry])
+    print("\nTelemetry Alert Output:", json.dumps(alert_out, indent=2))
