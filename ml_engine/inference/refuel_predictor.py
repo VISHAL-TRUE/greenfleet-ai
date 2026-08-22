@@ -8,8 +8,11 @@ import sys
 from typing import Dict, Any, Optional
 import numpy as np
 
-# Ensure ml_engine directory is on sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Ensure ml_engine directory is on sys.path without overriding project root
+_ML_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ML_DIR not in sys.path:
+    sys.path.append(_ML_DIR)
+
 
 from config import VEHICLE_PROFILES
 

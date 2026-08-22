@@ -7,6 +7,7 @@ Assigned to Person 4 (Simulation Engineer).
 
 from typing import Optional
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 from backend.app.models.schemas import (
     SimulationRunRequest,
     SimulationRunResponse,
@@ -25,6 +26,7 @@ from backend.app.core.integration import predict_fuel_and_co2
 from backend.app.models.vehicle import VehicleModel
 from backend.app.models.route import RouteModel
 from backend.app.models.simulation import (
+    CarbonBudgetModel,
     ScenarioType,
     SimulationStateResponse,
     BenchmarkComparison,
@@ -159,4 +161,21 @@ def run_simulation_optimization():
 def get_simulation_state():
     """Returns complete state of simulation: vehicles, routes, baseline & optimized assignments."""
     return simulation_engine.get_state()
+
+
+class SetCarbonBudgetRequest(BaseModel):
+    budget_kg: float = Field(..., gt=0, description="New planning horizon carbon budget in kg CO2")
+
+
+@router.get("/carbon-budget", response_model=CarbonBudgetModel, summary="Get active Carbon Budget Governor telemetry")
+def get_carbon_budget():
+    """Returns the active operational carbon budget, consumed, projected, remaining, and dynamic penalty."""
+    return simulation_engine.carbon_governor.get_state()
+
+
+@router.post("/carbon-budget", response_model=SimulationStateResponse, summary="Configure operational carbon budget")
+def configure_carbon_budget(payload: SetCarbonBudgetRequest):
+    """Dynamically reconfigures the planning carbon budget and recalculates governor state."""
+    return simulation_engine.set_carbon_budget(payload.budget_kg)
+
 

@@ -10,8 +10,11 @@ from typing import Dict, Any, List, Union, Optional
 import numpy as np
 import pandas as pd
 
-# Ensure ml_engine directory is on sys.path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Ensure ml_engine directory is on sys.path without overriding project root
+_ML_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _ML_DIR not in sys.path:
+    sys.path.append(_ML_DIR)
+
 
 from config import ALERT_SETTINGS, BEHAVIOR_THRESHOLDS
 from inference.fuel_predictor import predict_fuel_consumption
