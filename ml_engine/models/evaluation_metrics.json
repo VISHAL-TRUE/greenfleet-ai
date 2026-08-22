@@ -1,0 +1,100 @@
+{
+    "best_model": "lightgbm",
+    "is_lightgbm_native": false,
+    "random_seed": 42,
+    "features": {
+        "categorical": [
+            "vehicle_type",
+            "fuel_type"
+        ],
+        "raw_numeric": [
+            "vehicle_age",
+            "required_payload_kg",
+            "max_payload_kg",
+            "distance_km",
+            "traffic_factor",
+            "average_speed_kmph",
+            "road_grade",
+            "weather_factor"
+        ],
+        "all_numeric": [
+            "vehicle_age",
+            "required_payload_kg",
+            "max_payload_kg",
+            "distance_km",
+            "traffic_factor",
+            "average_speed_kmph",
+            "road_grade",
+            "weather_factor",
+            "payload_capacity_ratio",
+            "speed_efficiency_deviation",
+            "traffic_speed_ratio",
+            "grade_distance_work",
+            "payload_tonnage",
+            "weather_stress_index"
+        ]
+    },
+    "target": "fuel_consumed_l",
+    "metrics_summary": {
+        "lightgbm": {
+            "train": {
+                "mae": 0.9845,
+                "rmse": 1.3916,
+                "r2": 0.9988,
+                "mape_percent": 2.6
+            },
+            "val": {
+                "mae": 1.9144,
+                "rmse": 3.2132,
+                "r2": 0.9941,
+                "mape_percent": 4.12
+            },
+            "test": {
+                "mae": 1.9859,
+                "rmse": 3.1859,
+                "r2": 0.9939,
+                "mape_percent": 4.17
+            }
+        },
+        "linear_regression": {
+            "train": {
+                "mae": 10.66,
+                "rmse": 14.1486,
+                "r2": 0.8732,
+                "mape_percent": 52.24
+            },
+            "val": {
+                "mae": 10.9569,
+                "rmse": 15.062,
+                "r2": 0.8703,
+                "mape_percent": 49.65
+            },
+            "test": {
+                "mae": 10.7073,
+                "rmse": 14.4298,
+                "r2": 0.8752,
+                "mape_percent": 50.34
+            }
+        },
+        "random_forest": {
+            "train": {
+                "mae": 1.032,
+                "rmse": 1.679,
+                "r2": 0.9982,
+                "mape_percent": 2.19
+            },
+            "val": {
+                "mae": 2.7768,
+                "rmse": 4.6869,
+                "r2": 0.9874,
+                "mape_percent": 6.04
+            },
+            "test": {
+                "mae": 2.7133,
+                "rmse": 4.3855,
+                "r2": 0.9885,
+                "mape_percent": 5.51
+            }
+        }
+    }
+}
