@@ -155,3 +155,64 @@ class SimulationRunResponse(BaseModel):
     baseline: MetricReport
     optimized: MetricReport
     deltas: dict = Field(..., description="Comparison metrics (e.g. co2_saved_kg, co2_reduction_pct, fuel_saved_l)")
+
+
+# ---------------------------------------------------------------------------
+# 3. REAL-TIME TELEMETRY & ALERT INTELLIGENCE SCHEMAS
+# ---------------------------------------------------------------------------
+
+class TelemetryFrame(BaseModel):
+    vehicle_id: str = Field(..., description="Unique vehicle identifier")
+    timestamp: Optional[str] = Field(default=None, description="ISO timestamp")
+    vehicle_type: str = Field(default="Truck", description="Vehicle class")
+    fuel_type: str = Field(default="Diesel", description="Fuel type")
+    speed_kmph: float = Field(..., ge=0, description="Vehicle speed in km/h")
+    acceleration_mps2: float = Field(default=0.0, description="Acceleration in m/s^2")
+    rpm: float = Field(default=1500.0, ge=0, description="Engine RPM")
+    gear: int = Field(default=3, ge=0, description="Current transmission gear")
+    throttle_position_pct: float = Field(default=30.0, ge=0, le=100)
+    brake_pressure_pct: float = Field(default=0.0, ge=0, le=100)
+    engine_load_pct: float = Field(default=50.0, ge=0, le=100)
+    road_slope_pct: float = Field(default=0.0, description="Road elevation grade %")
+    traffic_level: str = Field(default="Medium", description="Low, Medium, High, Gridlock")
+    road_type: str = Field(default="Highway", description="Highway, Urban, Rural, Mountain")
+    fuel_level_l: float = Field(default=50.0, ge=0, description="Current fuel tank level in Litres")
+    fuel_rate_lph: Optional[float] = Field(default=None, description="Instantaneous fuel rate in L/h")
+    idle_duration_sec: int = Field(default=0, ge=0, description="Continuous idle duration in seconds")
+
+
+class TelemetryAnalysisRequest(BaseModel):
+    window: List[TelemetryFrame] = Field(..., description="Telemetry frames in chronological order")
+    fuel_price_inr: Optional[float] = Field(default=None, description="Optional custom fuel price in INR")
+
+
+class TelemetryAlertResponse(BaseModel):
+    vehicle_id: str
+    behaviour: str
+    severity: Literal["NORMAL", "INFO", "WARNING", "CRITICAL"]
+    behaviour_score: float
+    fuel_deviation_pct: float
+    fuel_wasted_l: float
+    estimated_cost_inr: float
+    co2_impact_kg: float
+    remaining_range_km: float
+    refuel_required: bool
+    message: str
+
+
+class RangeEstimateRequest(BaseModel):
+    fuel_level_l: float = Field(..., ge=0)
+    expected_efficiency_kmpl: float = Field(default=4.0, gt=0)
+    current_efficiency_kmpl: Optional[float] = Field(default=None, ge=0)
+    vehicle_type: str = Field(default="Truck")
+    fuel_capacity_l: Optional[float] = Field(default=None, gt=0)
+    trip_remaining_distance_km: Optional[float] = Field(default=None, ge=0)
+
+
+class RangeEstimateResponse(BaseModel):
+    fuel_level_l: float
+    fuel_level_pct: float
+    estimated_range_km: float
+    blended_efficiency_kmpl: float
+    refuel_required: bool
+    refuel_warning: Optional[str] = None
