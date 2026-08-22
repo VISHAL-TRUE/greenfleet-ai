@@ -1,5 +1,5 @@
 """
-GreenFlow AI - Model Evaluation & Visualisation Engine
+GreenFleet AI - Model Evaluation & Visualisation Engine
 Evaluates the trained model against test data and generates publication-grade diagnostics plots.
 """
 
@@ -41,7 +41,7 @@ def plot_actual_vs_predicted(y_true: np.ndarray, y_pred: np.ndarray, output_path
     max_val = max(np.max(y_true), np.max(y_pred))
     ax.plot([min_val, max_val], [min_val, max_val], color="#ef4444", linestyle="--", lw=2, label="Ideal (y = x)")
 
-    ax.set_title("GreenFlow AI - Actual vs Predicted Fuel Consumption (Litres)", fontsize=13, fontweight="bold", pad=12)
+    ax.set_title("GreenFleet AI - Actual vs Predicted Fuel Consumption (Litres)", fontsize=13, fontweight="bold", pad=12)
     ax.set_xlabel("Actual Fuel Consumed (Litres)", fontsize=11, fontweight="medium")
     ax.set_ylabel("Predicted Fuel Consumed (Litres)", fontsize=11, fontweight="medium")
 
@@ -59,7 +59,7 @@ def plot_actual_vs_predicted(y_true: np.ndarray, y_pred: np.ndarray, output_path
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
-    print(f"[GreenFlow ML] Actual vs Predicted plot saved to: {output_path}")
+    print(f"[GreenFleet ML] Actual vs Predicted plot saved to: {output_path}")
 
 
 def plot_feature_importance(pipeline, X_val: pd.DataFrame, y_val: np.ndarray, output_path: str):
@@ -87,12 +87,12 @@ def plot_feature_importance(pipeline, X_val: pd.DataFrame, y_val: np.ndarray, ou
     ax.set_yticklabels(sorted_names, fontsize=10)
     ax.invert_yaxis()  # top-down
     ax.set_xlabel("Mean Permutation Importance (Drop in $R^2$)", fontsize=11, fontweight="medium")
-    ax.set_title("GreenFlow AI - Feature Importance (Permutation)", fontsize=13, fontweight="bold", pad=12)
+    ax.set_title("GreenFleet AI - Feature Importance (Permutation)", fontsize=13, fontweight="bold", pad=12)
 
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
-    print(f"[GreenFlow ML] Feature importance plot saved to: {output_path}")
+    print(f"[GreenFleet ML] Feature importance plot saved to: {output_path}")
 
 
 def plot_residual_analysis(y_true: np.ndarray, y_pred: np.ndarray, output_path: str):
@@ -115,11 +115,11 @@ def plot_residual_analysis(y_true: np.ndarray, y_pred: np.ndarray, output_path: 
     ax2.set_xlabel("Residual (Litres)", fontsize=10)
     ax2.set_ylabel("Frequency", fontsize=10)
 
-    plt.suptitle("GreenFlow AI - Error & Residual Diagnostic Analysis", fontsize=14, fontweight="bold", y=1.02)
+    plt.suptitle("GreenFleet AI - Error & Residual Diagnostic Analysis", fontsize=14, fontweight="bold", y=1.02)
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
-    print(f"[GreenFlow ML] Residual analysis plot saved to: {output_path}")
+    print(f"[GreenFleet ML] Residual analysis plot saved to: {output_path}")
 
 
 def run_evaluation(
@@ -164,7 +164,7 @@ def run_evaluation(
     }
 
     print("\n=======================================================")
-    print("           GREENFLOW AI - MODEL EVALUATION             ")
+    print("           GREENFLEET AI - MODEL EVALUATION             ")
     print("=======================================================")
     print(f" Test Samples:     {metrics['test_sample_count']}")
     print(f" Mean Absolute Error (MAE):     {metrics['test_mae_l']:.2f} Litres")
@@ -188,7 +188,7 @@ def run_evaluation(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Evaluate GreenFlow AI Fuel Model")
+    parser = argparse.ArgumentParser(description="Evaluate GreenFleet AI Fuel Model")
     parser.add_argument("--model", type=str, default=None, help="Path to fuel_model.pkl")
     parser.add_argument("--data", type=str, default=None, help="Path to raw fleet_data.csv")
     parser.add_argument("--output_dir", type=str, default=None, help="Directory to save evaluation plots")

@@ -1,5 +1,5 @@
 """
-GreenFlow AI - Model Training Pipeline
+GreenFleet AI - Model Training Pipeline
 Trains LightGBM (with baseline model comparison) to predict vehicle fuel consumption.
 """
 
@@ -72,7 +72,7 @@ def get_model_instance(model_name: str, seed: int = 42):
                 verbose=-1,
             )
         else:
-            print("[GreenFlow ML Warning] LightGBM C++ package not present in current environment. "
+            print("[GreenFleet ML Warning] LightGBM C++ package not present in current environment. "
                   "Using Scikit-Learn HistGradientBoostingRegressor (native histogram GBDT equivalent).")
             return HistGradientBoostingRegressor(
                 max_iter=300,
@@ -107,7 +107,7 @@ def train_and_evaluate(
     4. Evaluates performance across all splits.
     5. Persists the best trained pipeline artifact and metadata.
     """
-    print(f"[GreenFlow ML] Loading data from {raw_data_path}...")
+    print(f"[GreenFleet ML] Loading data from {raw_data_path}...")
     datasets = prepare_datasets(
         raw_data_path=raw_data_path,
         processed_data_path=os.path.join(
@@ -125,7 +125,7 @@ def train_and_evaluate(
     X_test = datasets["X_test"]
     y_test = datasets["y_test"]
 
-    print(f"[GreenFlow ML] Split sizes: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
+    print(f"[GreenFleet ML] Split sizes: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
 
     models_to_run = ["lightgbm"]
     if compare_baselines:
@@ -137,7 +137,7 @@ def train_and_evaluate(
     best_pipeline = None
 
     for m_name in models_to_run:
-        print(f"\n[GreenFlow ML] Training {m_name.upper()}...")
+        print(f"\n[GreenFleet ML] Training {m_name.upper()}...")
         preprocessor = build_preprocessor_pipeline()
         regressor = get_model_instance(m_name, seed=seed)
 
@@ -177,7 +177,7 @@ def train_and_evaluate(
     # Save best model artifact
     os.makedirs(os.path.dirname(output_model_path), exist_ok=True)
     joblib.dump(best_pipeline, output_model_path)
-    print(f"\n[GreenFlow ML] Best model ({best_model_name.upper()}) saved to: {output_model_path}")
+    print(f"\n[GreenFleet ML] Best model ({best_model_name.upper()}) saved to: {output_model_path}")
 
     # Save evaluation summary and metadata
     metadata = {
@@ -196,7 +196,7 @@ def train_and_evaluate(
     metrics_path = os.path.join(os.path.dirname(output_model_path), "evaluation_metrics.json")
     with open(metrics_path, "w") as f:
         json.dump(metadata, f, indent=4)
-    print(f"[GreenFlow ML] Evaluation metrics saved to: {metrics_path}")
+    print(f"[GreenFleet ML] Evaluation metrics saved to: {metrics_path}")
 
     return {
         "best_model_name": best_model_name,
@@ -207,7 +207,7 @@ def train_and_evaluate(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train GreenFlow AI Fuel Consumption Model")
+    parser = argparse.ArgumentParser(description="Train GreenFleet AI Fuel Consumption Model")
     parser.add_argument("--data", type=str, default=None, help="Path to raw fleet_data.csv")
     parser.add_argument("--output", type=str, default=None, help="Path to save fuel_model.pkl")
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")

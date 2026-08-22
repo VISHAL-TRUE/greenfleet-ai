@@ -1,6 +1,6 @@
 """
-GreenFlow AI - Synthetic Fleet Dataset Generator
-Generates realistic, physically-grounded fleet trip data adhering to GreenFlow system JSON contracts.
+GreenFleet AI - Synthetic Fleet Dataset Generator
+Generates realistic, physically-grounded fleet trip data adhering to GreenFleet system JSON contracts.
 """
 
 import os
@@ -47,7 +47,7 @@ DESTINATIONS = ["Zone 1", "Zone 2", "Zone 3", "Zone 4", "Zone 5", "Metro Area", 
 
 def generate_fleet_dataset(num_samples: int = 6000, seed: int = 42) -> pd.DataFrame:
     """
-    Generates a synthetic dataset of fleet trips adhering strictly to GreenFlow JSON contracts.
+    Generates a synthetic dataset of fleet trips adhering strictly to GreenFleet JSON contracts.
 
     Features:
     - Vehicle: vehicle_id, vehicle_type, fuel_type, vehicle_age, fuel_capacity_l, max_payload_kg, available
@@ -211,7 +211,7 @@ def generate_fleet_dataset(num_samples: int = 6000, seed: int = 42) -> pd.DataFr
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate synthetic fleet dataset for GreenFlow AI ML Engine.")
+    parser = argparse.ArgumentParser(description="Generate synthetic fleet dataset for GreenFleet AI ML Engine.")
     parser.add_argument("--samples", type=int, default=6000, help="Number of samples to generate (default: 6000)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     parser.add_argument("--output", type=str, default=None, help="Output path for raw CSV")
@@ -223,12 +223,12 @@ def main():
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    print(f"[GreenFlow ML] Generating {args.samples} synthetic fleet trip records (seed={args.seed})...")
+    print(f"[GreenFleet ML] Generating {args.samples} synthetic fleet trip records (seed={args.seed})...")
     df = generate_fleet_dataset(num_samples=args.samples, seed=args.seed)
 
     df.to_csv(output_path, index=False)
-    print(f"[GreenFlow ML] Successfully saved raw fleet data to: {output_path}")
-    print(f"[GreenFlow ML] Dataset shape: {df.shape}")
+    print(f"[GreenFleet ML] Successfully saved raw fleet data to: {output_path}")
+    print(f"[GreenFleet ML] Dataset shape: {df.shape}")
     print("\nSample Preview matching JSON Contracts:")
     print(df.head(2).to_dict(orient="records"))
 

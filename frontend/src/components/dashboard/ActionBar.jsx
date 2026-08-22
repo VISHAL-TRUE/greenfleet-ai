@@ -31,13 +31,13 @@ export default function ActionBar() {
           <span>Simulate Peak Demand</span>
         </button>
 
-        {/* Run GreenFlow Optimisation Button */}
+        {/* Run GreenFleet Optimisation Button */}
         <button
           type="button"
           className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-all shadow-sm active:scale-95"
         >
           <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
-          <span>Run GreenFlow Optimisation</span>
+          <span>Run GreenFleet Optimisation</span>
         </button>
 
         {/* Reset Button */}

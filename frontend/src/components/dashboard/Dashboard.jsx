@@ -31,7 +31,7 @@ export default function Dashboard() {
       {/* 4. Analytics Panels (Fuel Consumption Analysis & Fleet Efficiency) */}
       <AnalyticsPlaceholder />
 
-      {/* 5. Comparative Evaluation: Baseline vs GreenFlow */}
+      {/* 5. Comparative Evaluation: Baseline vs GreenFleet */}
       <BeforeAfter />
     </main>
   )

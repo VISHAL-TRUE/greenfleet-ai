@@ -1,0 +1,47 @@
+[
+  {
+    "vehicle_id": "V001",
+    "vehicle_type": "Truck",
+    "fuel_type": "Diesel",
+    "vehicle_age": 4,
+    "fuel_capacity_l": 180.0,
+    "max_payload_kg": 5000.0,
+    "available": true
+  },
+  {
+    "vehicle_id": "V002",
+    "vehicle_type": "Van",
+    "fuel_type": "Diesel",
+    "vehicle_age": 2,
+    "fuel_capacity_l": 80.0,
+    "max_payload_kg": 2000.0,
+    "available": true
+  },
+  {
+    "vehicle_id": "V003",
+    "vehicle_type": "EV_Van",
+    "fuel_type": "Electric",
+    "vehicle_age": 1,
+    "fuel_capacity_l": 75.0,
+    "max_payload_kg": 1800.0,
+    "available": true
+  },
+  {
+    "vehicle_id": "V004",
+    "vehicle_type": "Heavy_Truck",
+    "fuel_type": "Diesel",
+    "vehicle_age": 6,
+    "fuel_capacity_l": 250.0,
+    "max_payload_kg": 10000.0,
+    "available": true
+  },
+  {
+    "vehicle_id": "V005",
+    "vehicle_type": "Hybrid_Truck",
+    "fuel_type": "Hybrid",
+    "vehicle_age": 2,
+    "fuel_capacity_l": 120.0,
+    "max_payload_kg": 4000.0,
+    "available": true
+  }
+]

@@ -1,5 +1,5 @@
 """
-GreenFlow AI — Quantum-Inspired Optimisation Engine
+GreenFleet AI — Quantum-Inspired Optimisation Engine
 ====================================================
 
 Owner: Person 3 (Quantum Optimisation)
@@ -336,7 +336,7 @@ class QuantumInspiredOptimizer:
         return result
 
     def _solve_milp(self) -> AssignmentResult:
-        prob = pulp.LpProblem("GreenFlow_Assignment", pulp.LpMinimize)
+        prob = pulp.LpProblem("GreenFleet_Assignment", pulp.LpMinimize)
         x = {
             (i, j): pulp.LpVariable(f"x_{i}_{j}", cat="Binary")
             for i in range(self.n)

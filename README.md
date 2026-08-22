@@ -1,6 +1,6 @@
-# GreenFlow AI — Quantum-Inspired Fuel Consumption Prediction and Green Fleet Optimization
+# GreenFleet AI — Quantum-Inspired Fuel Consumption Prediction and Green Fleet Optimization
 
-GreenFlow AI is a smart fleet management and decarbonization platform that optimizes vehicle-route assignments to minimize total fuel consumption and greenhouse gas ($CO_2$) emissions.
+GreenFleet AI is a smart fleet management and decarbonization platform that optimizes vehicle-route assignments to minimize total fuel consumption and greenhouse gas ($CO_2$) emissions.
 
 ## Architecture & Subsystems
 - **ML Engine (`ml_engine/`):** Physics-grounded machine learning models (LightGBM/GBDT) that predict fuel consumption and construct vehicle-route cost matrices for downstream optimization.

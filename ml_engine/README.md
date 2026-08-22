@@ -1,4 +1,4 @@
-# GreenFlow AI — ML Engine Component
+# GreenFleet AI — ML Engine Component
 
 > **Quantum-Inspired Fuel Consumption Prediction and Green Fleet Optimization**  
 > **Team Role: Person 2 — Machine Learning Engine**
@@ -7,7 +7,7 @@
 
 ## 1. Purpose & System Architecture
 
-The **ML Engine** is the predictive foundation of GreenFlow AI. It predicts trip fuel consumption ($L$) and estimated $CO_2$ emissions ($kg$) across all feasible vehicle-route combinations.
+The **ML Engine** is the predictive foundation of GreenFleet AI. It predicts trip fuel consumption ($L$) and estimated $CO_2$ emissions ($kg$) across all feasible vehicle-route combinations.
 
 ### End-to-End Pipeline:
 ```
@@ -28,7 +28,7 @@ Fleet & Route Data
 
 ---
 
-## 2. Standard GreenFlow JSON Contracts
+## 2. Standard GreenFleet JSON Contracts
 
 The ML Engine natively ingests and produces data adhering strictly to project architecture contracts:
 

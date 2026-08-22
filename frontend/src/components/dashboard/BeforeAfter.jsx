@@ -6,38 +6,38 @@ export default function BeforeAfter() {
     {
       metric: 'Fuel Consumption',
       baseline: '1,842 L',
-      greenflow: '1,497 L',
+      greenfleet: '1,497 L',
       delta: '-345 L (-18.7%)',
       isImprovement: true,
       baselinePercent: 100,
-      greenflowPercent: 81.3,
+      greenfleetPercent: 81.3,
     },
     {
       metric: 'Estimated CO₂ Emissions',
       baseline: '4.8 t',
-      greenflow: '3.9 t',
+      greenfleet: '3.9 t',
       delta: '-0.9 t (-18.8%)',
       isImprovement: true,
       baselinePercent: 100,
-      greenflowPercent: 81.2,
+      greenfleetPercent: 81.2,
     },
     {
       metric: 'Total Operating Cost',
       baseline: '₹31,400',
-      greenflow: '₹26,900',
+      greenfleet: '₹26,900',
       delta: '-₹4,500 (-14.3%)',
       isImprovement: true,
       baselinePercent: 100,
-      greenflowPercent: 85.7,
+      greenfleetPercent: 85.7,
     },
     {
       metric: 'Fleet Utilisation Rate',
       baseline: '71%',
-      greenflow: '87%',
+      greenfleet: '87%',
       delta: '+16.0%',
       isImprovement: true,
       baselinePercent: 71,
-      greenflowPercent: 87,
+      greenfleetPercent: 87,
     },
   ]
 
@@ -48,7 +48,7 @@ export default function BeforeAfter() {
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-emerald-400" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
-            Baseline vs GreenFlow
+            Baseline vs GreenFleet
           </h2>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
@@ -64,7 +64,7 @@ export default function BeforeAfter() {
             <tr className="border-b border-slate-800/60 bg-slate-950/30 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
               <th className="py-2.5 px-4">Metric</th>
               <th className="py-2.5 px-4 text-right">Baseline</th>
-              <th className="py-2.5 px-4 text-right">GreenFlow AI</th>
+              <th className="py-2.5 px-4 text-right">GreenFleet AI</th>
               <th className="py-2.5 px-4 text-right">Impact / Delta</th>
             </tr>
           </thead>
@@ -79,7 +79,7 @@ export default function BeforeAfter() {
                 </td>
                 <td className="py-3 px-4 text-right font-bold text-white">
                   <span className="inline-block rounded bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-emerald-300">
-                    {row.greenflow}
+                    {row.greenfleet}
                   </span>
                 </td>
                 <td className="py-3 px-4 text-right">

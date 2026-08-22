@@ -1,5 +1,5 @@
 """
-GreenFlow AI - Inference Verification & Contract Test Suite
+GreenFleet AI - Inference Verification & Contract Test Suite
 Validates model loading, single trip prediction, CO2 estimation,
 and JSON contracts for Person 1, Person 3, Person 4, and Person 5.
 """
@@ -24,8 +24,8 @@ from predict import (
 )
 
 
-class TestGreenFlowJSONContracts(unittest.TestCase):
-    """Automated tests validating GreenFlow JSON Contracts."""
+class TestGreenFleetJSONContracts(unittest.TestCase):
+    """Automated tests validating GreenFleet JSON Contracts."""
 
     @classmethod
     def setUpClass(cls):
