@@ -20,6 +20,9 @@ from backend.app.api.fleet import router as fleet_router
 from backend.app.api.prediction import router as prediction_router
 from backend.app.api.optimization import router as optimization_router
 from backend.app.api.simulation import router as simulation_router
+from backend.app.api.benchmark import router as benchmark_router
+from backend.app.api.forecasting import router as forecasting_router
+from backend.app.api.scoring import router as scoring_router
 
 app = FastAPI(
     title="GreenFleet AI",
@@ -43,6 +46,10 @@ app.include_router(fleet_router, prefix="/api")
 app.include_router(prediction_router, prefix="/api")
 app.include_router(optimization_router, prefix="/api")
 app.include_router(simulation_router, prefix="/api")
+app.include_router(simulation_router, prefix="/api/simulation", tags=["Simulation Engine"])
+app.include_router(benchmark_router, prefix="/api")
+app.include_router(forecasting_router, prefix="/api")
+app.include_router(scoring_router, prefix="/api")
 
 
 @app.get("/")

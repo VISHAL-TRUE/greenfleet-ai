@@ -38,6 +38,7 @@ _vehicles_store: List[Vehicle] = _load_sample_vehicles()
 _routes_store: List[Route] = _load_sample_routes()
 
 
+@router.get("", response_model=List[Vehicle])
 @router.get("/vehicles", response_model=List[Vehicle])
 def get_vehicles(
     available_only: Optional[bool] = None,
