@@ -18,7 +18,7 @@ export default function AnalyticsPlaceholder() {
               <span className="h-2 w-2 rounded-sm bg-slate-600"></span> Baseline
             </span>
             <span className="flex items-center gap-1">
-              <span className="h-2 w-2 rounded-sm bg-emerald-500"></span> GreenFlow
+              <span className="h-2 w-2 rounded-sm bg-emerald-500"></span> GreenFleet
             </span>
           </div>
         </div>
@@ -52,7 +52,7 @@ export default function AnalyticsPlaceholder() {
                     style={{ height: `${bar.base}%` }}
                     title={`Baseline: ${bar.base}L`}
                   />
-                  {/* GreenFlow bar (green/amber) */}
+                  {/* GreenFleet bar (green/amber) */}
                   <div
                     className={`w-1/2 rounded-t ${bar.color} transition-all opacity-90 group-hover:opacity-100 shadow-[0_0_8px_rgba(16,185,129,0.3)]`}
                     style={{ height: `${bar.opt}%` }}

@@ -12,7 +12,7 @@ export default function Header() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-base font-bold tracking-tight text-white">
-              GreenFlow <span className="text-emerald-400">AI</span>
+              GreenFleet <span className="text-emerald-400">AI</span>
             </span>
             <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-400 border border-emerald-500/20 uppercase tracking-wide">
               Operator v1.0

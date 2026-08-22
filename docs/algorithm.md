@@ -1,4 +1,4 @@
-# GreenFlow AI — Optimisation Algorithm
+# GreenFleet AI — Optimisation Algorithm
 
 **Module:** `backend/app/core/quantum_optimizer.py`
 **Owner:** Person 3 — Quantum Optimisation
@@ -197,7 +197,7 @@ subject to Σ_i x_ij = 1                for every route j        (fully covered)
 ```
 
 This is the **ground truth**: it's guaranteed optimal for the instance size
-GreenFlow operates at, and gives Simulated Annealing something honest to be
+GreenFleet operates at, and gives Simulated Annealing something honest to be
 benchmarked against — including an **optimality gap** (`(SA_cost −
 MILP_cost) / MILP_cost`), expected to land in the low single-digit-to-~5%
 range on mid-sized random instances, a normal gap for a metaheuristic vs. an

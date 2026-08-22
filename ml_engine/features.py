@@ -1,6 +1,6 @@
 """
-GreenFlow AI - Feature Engineering & Preprocessing Pipeline
-Provides robust feature extraction adhering strictly to GreenFlow JSON contracts.
+GreenFleet AI - Feature Engineering & Preprocessing Pipeline
+Provides robust feature extraction adhering strictly to GreenFleet JSON contracts.
 """
 
 import os
@@ -179,7 +179,7 @@ def prepare_datasets(
         engineer = FleetFeatureEngineer()
         processed_df = engineer.transform(df)
         processed_df.to_csv(processed_data_path, index=False)
-        print(f"[GreenFlow ML] Processed data saved to: {processed_data_path}")
+        print(f"[GreenFleet ML] Processed data saved to: {processed_data_path}")
 
     return {
         "X_train": X_train.reset_index(drop=True),

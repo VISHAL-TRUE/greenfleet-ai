@@ -1,6 +1,6 @@
 """
-GreenFlow AI - ML Inference & Decision Support Interface
-Provides lightweight, standalone inference functions strictly adhering to GreenFlow JSON contracts.
+GreenFleet AI - ML Inference & Decision Support Interface
+Provides lightweight, standalone inference functions strictly adhering to GreenFleet JSON contracts.
 """
 
 import os
@@ -319,7 +319,7 @@ if __name__ == "__main__":
         "priority": 2,
     }
 
-    print("[GreenFlow ML] Contract Testing...")
+    print("[GreenFleet ML] Contract Testing...")
     pred_contract = predict_trip(sample_vehicle, sample_route)
     print("\n--- Prediction Contract ---")
     print(json.dumps(pred_contract, indent=2))

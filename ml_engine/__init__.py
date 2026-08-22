@@ -1,5 +1,5 @@
 """
-GreenFlow AI - ML Engine Package
+GreenFleet AI - ML Engine Package
 Machine Learning Fuel Consumption Prediction & Matrix Generation for Green Fleet Optimization.
 """
 
