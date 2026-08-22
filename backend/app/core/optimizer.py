@@ -61,6 +61,9 @@ def optimize_routes(
     result: AssignmentResult
     if method == "quantum_inspired":
         result = optimizer.solve_simulated_annealing()
+        verification = optimizer.verify_solution(result)
+        if not verification["is_valid"]:
+            result = optimizer.solve_classical_baseline()
     elif method == "classical_baseline":
         result = optimizer.solve_classical_baseline()
     else:

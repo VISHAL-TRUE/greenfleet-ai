@@ -51,6 +51,7 @@ import logging
 import math
 import random
 import time
+import warnings
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
@@ -60,7 +61,14 @@ logger = logging.getLogger(__name__)
 
 try:
     import pulp
-
+    # Suppress PuLP 3.x → 4.0 migration warnings: the new API (prob.add_variable /
+    # COIN_CMD) is not yet stable across all PuLP 3.x patch versions, so we
+    # keep the current call-sites and silence the noise until PuLP 4.0 ships.
+    warnings.filterwarnings(
+        "ignore",
+        message="Constructing LpVariable.*directly is deprecated",
+        category=DeprecationWarning,
+    )
     PULP_AVAILABLE = True
 except ImportError:  # pragma: no cover - exercised only when pulp missing
     PULP_AVAILABLE = False
@@ -212,16 +220,15 @@ class QuantumInspiredOptimizer:
                 distance_penalty = r.distance_km * r.traffic_factor * self.config.distance_weight
 
                 if v.max_payload_kg < r.required_payload_kg:
-                    capacity_penalty = self.config.capacity_shortfall_penalty * (
-                        r.required_payload_kg - v.max_payload_kg
+                    cost[i, j] = 1e8 + (
+                        self.config.capacity_shortfall_penalty * (r.required_payload_kg - v.max_payload_kg)
                     )
                 else:
                     # mild penalty for wasted over-capacity, keeps well-matched vehicles cheapest
                     capacity_penalty = 0.05 * (v.max_payload_kg - r.required_payload_kg)
-
-                cost[i, j] = (
-                    fuel_cost + co2_penalty + distance_penalty + capacity_penalty
-                ) * r.priority
+                    cost[i, j] = (
+                        fuel_cost + co2_penalty + distance_penalty + capacity_penalty
+                    ) * r.priority
         return cost
 
     # ---- shared cost/penalty evaluation ------------------------------
@@ -240,6 +247,7 @@ class QuantumInspiredOptimizer:
           - every route assigned exactly once
           - no vehicle assigned more than one route (one-to-one assignment)
           - unavailable vehicles never used
+          - no capacity violations
         """
         penalty = 0.0
         violations = 0
@@ -259,6 +267,14 @@ class QuantumInspiredOptimizer:
                 violations += 1
                 penalty += self.config.constraint_penalty * vehicle_loads[i]
 
+        for i, v in enumerate(self.vehicles):
+            for j, r in enumerate(self.routes):
+                if matrix[i, j] == 1 and v.max_payload_kg < r.required_payload_kg:
+                    violations += 1
+                    penalty += self.config.constraint_penalty + (
+                        self.config.capacity_shortfall_penalty * (r.required_payload_kg - v.max_payload_kg)
+                    )
+
         return penalty, violations
 
     def _evaluate(self, matrix: np.ndarray) -> Dict[str, float]:
@@ -276,22 +292,52 @@ class QuantumInspiredOptimizer:
     # ---- Simulated Annealing (quantum-inspired) ----------------------
 
     def _random_valid_start(self) -> np.ndarray:
-        """Each route gets a random *available* vehicle. May still breach
-        the one-vehicle-per-route cap / capacity — SA anneals those out via
-        penalties."""
+        """Each route gets an available vehicle with sufficient capacity if possible."""
         matrix = np.zeros((self.n, self.m))
-        for j in range(self.m):
-            i = random.choice(self._available_idx)
+        used = set()
+        for j, r in enumerate(self.routes):
+            valid_avail = [
+                i for i in self._available_idx
+                if i not in used and self.vehicles[i].max_payload_kg >= r.required_payload_kg
+            ]
+            if not valid_avail:
+                valid_avail = [
+                    i for i in self._available_idx
+                    if self.vehicles[i].max_payload_kg >= r.required_payload_kg
+                ]
+            if not valid_avail:
+                valid_avail = self._available_idx
+            i = random.choice(valid_avail)
             matrix[i, j] = 1
+            used.add(i)
         return matrix
 
     def _neighbor(self, matrix: np.ndarray) -> np.ndarray:
-        """Move: reassign one random route to a different available vehicle."""
+        """Move: swap two route assignments or reassign one route to an available vehicle."""
         new_matrix = matrix.copy()
-        j = random.randrange(self.m)
-        new_matrix[:, j] = 0
-        i = random.choice(self._available_idx)
-        new_matrix[i, j] = 1
+        used = [i for i in range(self.n) if new_matrix[i, :].sum() > 0]
+        unused_avail = [i for i in self._available_idx if i not in used]
+
+        if self.m >= 2 and (not unused_avail or random.random() < 0.5):
+            # Swap move between two routes
+            j1, j2 = random.sample(range(self.m), 2)
+            i1 = int(np.argmax(new_matrix[:, j1]))
+            i2 = int(np.argmax(new_matrix[:, j2]))
+            new_matrix[i1, j1] = 0
+            new_matrix[i2, j2] = 0
+            new_matrix[i2, j1] = 1
+            new_matrix[i1, j2] = 1
+        else:
+            # Reassign move
+            j = random.randrange(self.m)
+            r = self.routes[j]
+            # Prefer available vehicles meeting capacity
+            cand = [i for i in unused_avail if self.vehicles[i].max_payload_kg >= r.required_payload_kg]
+            if not cand:
+                cand = unused_avail if unused_avail else self._available_idx
+            new_matrix[:, j] = 0
+            i = random.choice(cand)
+            new_matrix[i, j] = 1
         return new_matrix
 
     def solve_simulated_annealing(self) -> AssignmentResult:
@@ -361,7 +407,18 @@ class QuantumInspiredOptimizer:
                 for j in range(self.m):
                     prob += x[i, j] == 0
 
-        prob.solve(pulp.PULP_CBC_CMD(msg=0))
+        # capacity constraint: vehicle cannot serve route if max_payload_kg < required_payload_kg
+        for i, v in enumerate(self.vehicles):
+            for j, r in enumerate(self.routes):
+                if v.max_payload_kg < r.required_payload_kg:
+                    prob += x[i, j] == 0
+
+        # Use COIN_CMD (preferred) with fallback to PULP_CBC_CMD for older installs
+        try:
+            solver = pulp.COIN_CMD(msg=0)
+        except Exception:
+            solver = pulp.PULP_CBC_CMD(msg=0)  # type: ignore[attr-defined]
+        prob.solve(solver)
 
         matrix = np.zeros((self.n, self.m))
         for i in range(self.n):
@@ -391,6 +448,9 @@ class QuantumInspiredOptimizer:
         for i, v in enumerate(self.vehicles):
             if not v.available:
                 cost[i, :] = 1e9
+            for j, r in enumerate(self.routes):
+                if v.max_payload_kg < r.required_payload_kg:
+                    cost[i, j] = 1e9
 
         row_idx, col_idx = linear_sum_assignment(cost)
         matrix = np.zeros((self.n, self.m))

@@ -26,6 +26,7 @@ from backend.app.core.quantum_optimizer import (
 router = APIRouter(prefix="/optimize", tags=["Optimization"])
 
 
+@router.post("", response_model=OptimizeResponse)
 @router.post("/assign", response_model=OptimizeResponse)
 def compute_assignments(request: OptimizeRequest):
     """
@@ -35,10 +36,10 @@ def compute_assignments(request: OptimizeRequest):
     # 1. Generate predictions if not supplied
     predictions: List[Prediction] = request.predictions or []
     if not predictions:
-        for v in request.vehicles:
-            for r in request.routes:
-                pred = _calculate_stub_prediction(VehiclePair(vehicle=v, route=r))
-                predictions.append(pred)
+        from backend.app.api.prediction import batch_predict, BatchPredictionRequest
+        pairs = [VehiclePair(vehicle=v, route=r) for v in request.vehicles for r in request.routes]
+        pred_res = batch_predict(BatchPredictionRequest(pairs=pairs))
+        predictions = pred_res.predictions
 
     # 2. Convert to optimizer dataclass representations
     opt_vehicles = [
