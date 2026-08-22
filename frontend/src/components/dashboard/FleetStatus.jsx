@@ -1,54 +1,24 @@
-import React from 'react'
-import { Truck, Fuel, ArrowRight, Gauge, CheckCircle, AlertTriangle, AlertCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { Truck, Fuel, ArrowRight, CheckCircle, Info, ChevronDown, ChevronUp } from 'lucide-react'
 
-export default function FleetStatus() {
-  const vehicles = [
-    {
-      id: 'V023',
-      route: 'R07',
-      fuel: '38.4 L',
-      fuelPercent: 82,
-      efficiency: 'HIGH RISK',
-      efficiencyLevel: 'risk', // red
-      status: 'Delayed Traffic',
-    },
-    {
-      id: 'V011',
-      route: 'R03',
-      fuel: '24.7 L',
-      fuelPercent: 46,
-      efficiency: 'OPTIMAL',
-      efficiencyLevel: 'optimal', // green
-      status: 'On Schedule',
-    },
-    {
-      id: 'V031',
-      route: 'R05',
-      fuel: '31.2 L',
-      fuelPercent: 64,
-      efficiency: 'MODERATE',
-      efficiencyLevel: 'moderate', // yellow
-      status: 'Normal Route',
-    },
-    {
-      id: 'V018',
-      route: 'R02',
-      fuel: '22.1 L',
-      fuelPercent: 38,
-      efficiency: 'OPTIMAL',
-      efficiencyLevel: 'optimal', // green
-      status: 'On Schedule',
-    },
-    {
-      id: 'V042',
-      route: 'R09',
-      fuel: '35.8 L',
-      fuelPercent: 74,
-      efficiency: 'MODERATE',
-      efficiencyLevel: 'moderate', // yellow
-      status: 'Rerouting',
-    },
-  ]
+export default function FleetStatus({
+  vehicles = [],
+  routes = [],
+  assignments = [],
+  scoringMap = {},
+  isOptimized = false,
+}) {
+  const [selectedVehicleId, setSelectedVehicleId] = useState(null)
+
+  // Map lookups
+  const routeMap = new Map(routes.map((r) => [r.route_id, r]))
+  const assignmentMap = new Map(assignments.map((a) => [a.vehicle_id, a]))
+
+  const getEfficiencyLevel = (score, utilization) => {
+    if (score >= 85) return 'optimal'
+    if (score >= 60) return 'moderate'
+    return 'risk'
+  }
 
   const getEfficiencyBadge = (level, label) => {
     switch (level) {
@@ -96,57 +66,120 @@ export default function FleetStatus() {
         <div className="flex items-center gap-2">
           <Truck className="h-4 w-4 text-emerald-400" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
-            Fleet Status
+            Fleet Telemetry & Assignments
           </h2>
         </div>
-        <span className="text-[11px] font-mono text-slate-400">5 Active Telemetries</span>
+        <span className="text-[11px] font-mono text-slate-400">
+          {assignments.length} / {vehicles.length} Dispatched
+        </span>
       </div>
 
       {/* Vehicle Rows List */}
-      <div className="divide-y divide-slate-800/60 overflow-y-auto max-h-[420px] p-2 space-y-2">
-        {vehicles.map((v) => (
-          <div
-            key={v.id}
-            className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-3 hover:border-slate-700/80 transition-all"
-          >
-            {/* Top row: ID, Route, and Efficiency */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-bold text-white tracking-wide">
-                  {v.id}
-                </span>
-                <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                  <ArrowRight className="h-3 w-3 text-slate-500" />
-                  <span className="font-medium text-slate-300">{v.route}</span>
+      <div className="divide-y divide-slate-800/60 overflow-y-auto max-h-[460px] p-2 space-y-2">
+        {vehicles.length === 0 ? (
+          <div className="p-4 text-center text-xs text-slate-500">Loading fleet data...</div>
+        ) : (
+          vehicles.map((v) => {
+            const assignment = assignmentMap.get(v.vehicle_id)
+            const route = assignment ? routeMap.get(assignment.route_id) : null
+            const scoreKey = route ? `${v.vehicle_id}_${route.route_id}` : null
+            const scoreInfo = scoreKey ? scoringMap[scoreKey] : null
+
+            const isAssigned = !!assignment && assignment.status === 'assigned'
+            const fuelConsumed = assignment?.predicted_fuel_l ?? 0
+            const fuelTankPercent = Math.min(100, Math.round((fuelConsumed / (v.fuel_capacity_l || 100)) * 100))
+            const payloadRatio = route ? Math.min(100, Math.round((route.required_payload_kg / (v.max_payload_kg || 1)) * 100)) : 0
+            
+            const overallScore = scoreInfo?.overall_score || (isAssigned ? 88 : 0)
+            const effLevel = isAssigned ? getEfficiencyLevel(overallScore, payloadRatio) : 'moderate'
+            const badgeLabel = isAssigned
+              ? (scoreInfo?.recommendation || `${overallScore.toFixed(0)}% Match`)
+              : 'Standby'
+
+            const isSelected = selectedVehicleId === v.vehicle_id
+
+            return (
+              <div
+                key={v.vehicle_id}
+                className="rounded-lg border border-slate-800/60 bg-slate-950/40 p-3 hover:border-slate-700/80 transition-all cursor-pointer"
+                onClick={() => setSelectedVehicleId(isSelected ? null : v.vehicle_id)}
+              >
+                {/* Top row: ID, Type, Route, and Efficiency Badge */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-white tracking-wide">
+                      {v.vehicle_id}
+                    </span>
+                    <span className="text-[10px] rounded bg-slate-800 px-1.5 py-0.2 text-slate-400 border border-slate-700">
+                      {v.vehicle_type} • {v.fuel_type}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {getEfficiencyBadge(effLevel, badgeLabel)}
+                    {scoreInfo && (
+                      isSelected ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />
+                    )}
+                  </div>
                 </div>
-              </div>
-              {getEfficiencyBadge(v.efficiencyLevel, v.efficiency)}
-            </div>
 
-            {/* Fuel Consumption Metric & Bar */}
-            <div className="mt-2.5">
-              <div className="flex items-center justify-between text-[10px] text-slate-400">
-                <span className="flex items-center gap-1">
-                  <Fuel className="h-3 w-3 text-slate-400" />
-                  Fuel Consumption
-                </span>
-                <span className="font-mono font-medium text-slate-200">{v.fuel}</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full rounded-full bg-slate-800/90 overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${getProgressBarColor(v.efficiencyLevel)}`}
-                  style={{ width: `${v.fuelPercent}%` }}
-                />
-              </div>
-            </div>
+                {/* Route Destination */}
+                <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400">
+                  <ArrowRight className="h-3 w-3 text-slate-500 shrink-0" />
+                  {route ? (
+                    <span className="font-medium text-slate-300 truncate">
+                      {route.origin} → {route.destination} ({route.distance_km} km)
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic">Standby in Depot</span>
+                  )}
+                </div>
 
-            {/* Sub-telemetry Footer */}
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span>Status: <span className="text-slate-400">{v.status}</span></span>
-              <span>Load: <span className="text-slate-400">{v.fuelPercent}%</span></span>
-            </div>
-          </div>
-        ))}
+                {/* Fuel Consumption Metric & Bar */}
+                {isAssigned && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Fuel className="h-3 w-3 text-slate-400" />
+                        Predicted Fuel
+                      </span>
+                      <span className="font-mono font-medium text-slate-200">
+                        {fuelConsumed.toFixed(1)} L / {v.fuel_capacity_l} L tank
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full rounded-full bg-slate-800/90 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${getProgressBarColor(effLevel)}`}
+                        style={{ width: `${Math.max(5, fuelTankPercent)}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-telemetry Footer */}
+                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                  <span>Capacity: <span className="text-slate-400">{(v.max_payload_kg / 1000).toFixed(1)} t max</span></span>
+                  <span>Payload: <span className="text-slate-400">{payloadRatio}% load</span></span>
+                </div>
+
+                {/* Explainable 5-Factor Suitability Accordion */}
+                {isSelected && scoreInfo?.breakdown && (
+                  <div className="mt-3 pt-2 border-t border-slate-800/80 text-[10px] space-y-1.5 bg-slate-900/60 p-2 rounded">
+                    <div className="font-semibold text-emerald-400 text-[11px] flex items-center gap-1">
+                      <Info className="h-3 w-3" />
+                      5-Factor Explainable Suitability Analysis:
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-300 font-mono">
+                      <div>Fuel Efficiency: <span className="text-emerald-400 font-bold">{scoreInfo.breakdown.fuel_efficiency.toFixed(0)}%</span></div>
+                      <div>Capacity Match: <span className="text-emerald-400 font-bold">{scoreInfo.breakdown.capacity_match.toFixed(0)}%</span></div>
+                      <div>Distance Match: <span className="text-emerald-400 font-bold">{scoreInfo.breakdown.distance_suitability.toFixed(0)}%</span></div>
+                      <div>Traffic Resilience: <span className="text-emerald-400 font-bold">{scoreInfo.breakdown.traffic_resilience.toFixed(0)}%</span></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
     </div>
   )

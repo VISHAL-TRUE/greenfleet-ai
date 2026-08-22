@@ -1,51 +1,145 @@
 import React from 'react'
-import { Flame, Sparkles, RotateCcw, PlayCircle, Sliders } from 'lucide-react'
+import { Flame, Sparkles, RotateCcw, PlayCircle, Gauge, Loader2, Navigation } from 'lucide-react'
 
-export default function ActionBar() {
+export default function ActionBar({
+  scenario = 'normal',
+  status = 'normal_state',
+  isOptimized = false,
+  loading = false,
+  activeAction = null,
+  onReset,
+  onSimulatePeak,
+  onSimulateTraffic,
+  onOptimize,
+}) {
+  const getScenarioLabel = () => {
+    switch (scenario) {
+      case 'peak_demand':
+        return {
+          title: 'Peak Demand Surge',
+          tag: 'Payload +25%',
+          dotColor: 'bg-rose-400',
+          textColor: 'text-rose-400',
+          badgeBg: 'bg-rose-500/10 border-rose-500/30',
+        }
+      case 'high_traffic':
+        return {
+          title: 'High Traffic Congestion',
+          tag: 'Congestion 1.6x',
+          dotColor: 'bg-amber-400',
+          textColor: 'text-amber-400',
+          badgeBg: 'bg-amber-500/10 border-amber-500/30',
+        }
+      case 'normal':
+      default:
+        return {
+          title: 'Normal Baseline State',
+          tag: 'Standard Operations',
+          dotColor: 'bg-emerald-400',
+          textColor: 'text-emerald-400',
+          badgeBg: 'bg-emerald-500/10 border-emerald-500/30',
+        }
+    }
+  }
+
+  const scenarioMeta = getScenarioLabel()
+
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-slate-800/80 bg-slate-900/60 px-4 py-2.5 shadow-md shadow-black/20 backdrop-blur-sm">
       {/* Left: Simulation State Indicator */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-          <PlayCircle className="h-4 w-4" />
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <PlayCircle className="h-4 w-4" />
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-slate-300">Simulation Controls</span>
           <span className="text-slate-500">|</span>
-          <span className="text-xs text-slate-400">Current:</span>
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            Normal State
+          <span className="text-xs text-slate-400">Scenario:</span>
+          <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium border ${scenarioMeta.badgeBg} ${scenarioMeta.textColor}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${scenarioMeta.dotColor} animate-pulse`}></span>
+            {scenarioMeta.title} ({scenarioMeta.tag})
           </span>
+
+          {isOptimized && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-xs font-bold text-emerald-300">
+              <Sparkles className="h-3 w-3 text-emerald-400" />
+              Quantum Optimized
+            </span>
+          )}
         </div>
       </div>
 
       {/* Right: Action Buttons */}
-      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+      <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
         {/* Simulate Peak Demand Button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/25 transition-all shadow-sm active:scale-95"
+          onClick={onSimulatePeak}
+          disabled={loading}
+          className={`flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/25 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+            scenario === 'peak_demand' ? 'ring-1 ring-rose-400/50 bg-rose-500/30' : ''
+          }`}
+          title="Simulate surge in payload demand across delivery routes"
         >
-          <Flame className="h-3.5 w-3.5 text-rose-400" />
-          <span>Simulate Peak Demand</span>
+          {activeAction === 'peak' ? (
+            <Loader2 className="h-3.5 w-3.5 text-rose-400 animate-spin" />
+          ) : (
+            <Flame className="h-3.5 w-3.5 text-rose-400" />
+          )}
+          <span>Peak Demand</span>
+        </button>
+
+        {/* Simulate High Traffic Button */}
+        <button
+          type="button"
+          onClick={onSimulateTraffic}
+          disabled={loading}
+          className={`flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-300 hover:bg-amber-500/25 transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+            scenario === 'high_traffic' ? 'ring-1 ring-amber-400/50 bg-amber-500/30' : ''
+          }`}
+          title="Simulate severe arterial traffic and congestion delays"
+        >
+          {activeAction === 'traffic' ? (
+            <Loader2 className="h-3.5 w-3.5 text-amber-400 animate-spin" />
+          ) : (
+            <Navigation className="h-3.5 w-3.5 text-amber-400" />
+          )}
+          <span>High Traffic</span>
         </button>
 
         {/* Run GreenFleet Optimisation Button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-600/30 transition-all shadow-sm active:scale-95"
+          onClick={onOptimize}
+          disabled={loading}
+          className="flex items-center gap-1.5 rounded-lg border border-emerald-500/50 bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-200 px-3.5 py-1.5 text-xs font-bold transition-all shadow-md shadow-emerald-950/40 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Execute Quantum-Inspired Simulated Annealing allocation to minimize fuel and CO2"
         >
-          <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+          {activeAction === 'optimize' ? (
+            <Loader2 className="h-3.5 w-3.5 text-emerald-300 animate-spin" />
+          ) : (
+            <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+          )}
           <span>Run GreenFleet Optimisation</span>
         </button>
 
         {/* Reset Button */}
         <button
           type="button"
-          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all shadow-sm active:scale-95"
+          onClick={onReset}
+          disabled={loading}
+          className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Reset fleet and route network to initial normal state"
         >
-          <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
+          {activeAction === 'reset' ? (
+            <Loader2 className="h-3.5 w-3.5 text-slate-400 animate-spin" />
+          ) : (
+            <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
+          )}
           <span>Reset</span>
         </button>
       </div>

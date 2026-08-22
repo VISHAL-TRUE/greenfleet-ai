@@ -1,43 +1,50 @@
 import React from 'react'
-import { Scale, ArrowDownRight, ArrowUpRight, CheckCircle2 } from 'lucide-react'
+import { Scale, ArrowDownRight, ArrowUpRight, CheckCircle2, AlertTriangle } from 'lucide-react'
 
-export default function BeforeAfter() {
+export default function BeforeAfter({
+  benchmark = null,
+  isOptimized = false,
+}) {
+  const baseline = benchmark?.baseline
+  const greenflow = benchmark?.greenflow
+
   const comparisonRows = [
     {
-      metric: 'Fuel Consumption',
-      baseline: '1,842 L',
-      greenfleet: '1,497 L',
-      delta: '-345 L (-18.7%)',
+      metric: 'Total Fuel Consumption',
+      baseline: baseline ? `${baseline.total_fuel_l.toFixed(1)} L` : '--',
+      greenfleet: greenflow ? `${greenflow.total_fuel_l.toFixed(1)} L` : '--',
+      delta: benchmark ? `-${benchmark.fuel_saved_l.toFixed(1)} L (-${benchmark.fuel_saved_pct.toFixed(1)}%)` : '--',
       isImprovement: true,
-      baselinePercent: 100,
-      greenfleetPercent: 81.3,
     },
     {
       metric: 'Estimated CO₂ Emissions',
-      baseline: '4.8 t',
-      greenfleet: '3.9 t',
-      delta: '-0.9 t (-18.8%)',
+      baseline: baseline ? `${(baseline.estimated_co2_kg / 1000).toFixed(2)} t (${baseline.estimated_co2_kg.toFixed(0)} kg)` : '--',
+      greenfleet: greenflow ? `${(greenflow.estimated_co2_kg / 1000).toFixed(2)} t (${greenflow.estimated_co2_kg.toFixed(0)} kg)` : '--',
+      delta: benchmark ? `-${(benchmark.co2_reduced_kg / 1000).toFixed(2)} t (-${benchmark.co2_reduced_pct.toFixed(1)}%)` : '--',
       isImprovement: true,
-      baselinePercent: 100,
-      greenfleetPercent: 81.2,
     },
     {
       metric: 'Total Operating Cost',
-      baseline: '₹31,400',
-      greenfleet: '₹26,900',
-      delta: '-₹4,500 (-14.3%)',
+      baseline: baseline ? `$${baseline.total_operating_cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '--',
+      greenfleet: greenflow ? `$${greenflow.total_operating_cost.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '--',
+      delta: benchmark ? `-$${benchmark.cost_saved.toLocaleString(undefined, { maximumFractionDigits: 0 })} (-${benchmark.cost_saved_pct.toFixed(1)}%)` : '--',
       isImprovement: true,
-      baselinePercent: 100,
-      greenfleetPercent: 85.7,
     },
     {
       metric: 'Fleet Utilisation Rate',
-      baseline: '71%',
-      greenfleet: '87%',
-      delta: '+16.0%',
+      baseline: baseline ? `${baseline.fleet_utilisation_pct.toFixed(0)}%` : '--',
+      greenfleet: greenflow ? `${greenflow.fleet_utilisation_pct.toFixed(0)}%` : '--',
+      delta: benchmark
+        ? `${(greenflow.fleet_utilisation_pct - baseline.fleet_utilisation_pct) >= 0 ? '+' : ''}${(greenflow.fleet_utilisation_pct - baseline.fleet_utilisation_pct).toFixed(1)}%`
+        : '--',
       isImprovement: true,
-      baselinePercent: 71,
-      greenfleetPercent: 87,
+    },
+    {
+      metric: 'Inefficient Pairings',
+      baseline: baseline ? `${baseline.inefficient_assignments_count} routes` : '--',
+      greenfleet: greenflow ? `${greenflow.inefficient_assignments_count} routes` : '--',
+      delta: benchmark ? `-${benchmark.inefficient_assignments_reduced} eliminated` : '--',
+      isImprovement: true,
     },
   ]
 
@@ -48,24 +55,33 @@ export default function BeforeAfter() {
         <div className="flex items-center gap-2">
           <Scale className="h-4 w-4 text-emerald-400" />
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-200">
-            Baseline vs GreenFleet
+            Baseline Heuristic vs GreenFleet Optimization
           </h2>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          <span>Optimisation Verified</span>
+          {isOptimized ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Optimisation Verified ({benchmark?.scenario || 'Active'})</span>
+            </>
+          ) : (
+            <>
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+              <span className="text-amber-400">Baseline Active (Run Optimisation to compare)</span>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Comparison Table / Grid */}
+      {/* Comparison Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs">
           <thead>
             <tr className="border-b border-slate-800/60 bg-slate-950/30 text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
               <th className="py-2.5 px-4">Metric</th>
-              <th className="py-2.5 px-4 text-right">Baseline</th>
+              <th className="py-2.5 px-4 text-right">Uncoordinated Baseline</th>
               <th className="py-2.5 px-4 text-right">GreenFleet AI</th>
-              <th className="py-2.5 px-4 text-right">Impact / Delta</th>
+              <th className="py-2.5 px-4 text-right">Impact / Savings</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50 font-mono">
